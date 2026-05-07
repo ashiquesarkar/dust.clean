@@ -2,43 +2,64 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#06090f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="DustSweep" />
   <meta name="base:app_id" content="69fb2f0c2763280abf41cd75" />
-  <title>DustSweep</title>
+
+  <title>DustSweep — Sweep Dust Tokens on Base & BNB</title>
+  <meta name="description" content="Convert worthless dust tokens into ETH or BNB with one click. Works on Base Mainnet and BNB Chain." />
+
+  <!-- Favicon -->
   <link rel="icon" type="image/png" href="https://i.postimg.cc/1XyVnvcg/logo.png" />
+  <link rel="apple-touch-icon" href="https://i.postimg.cc/1XyVnvcg/logo.png" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Ethers -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+
+  <!-- Styles -->
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
+
   <!-- TOAST -->
   <div id="toast-container"></div>
 
   <!-- HEADER -->
   <header>
     <div class="logo-area">
-      <img src="https://i.postimg.cc/1XyVnvcg/logo.png" alt="DustSweep Logo" id="site-logo" />
+      <img src="https://i.postimg.cc/1XyVnvcg/logo.png" alt="DustSweep" id="site-logo" />
       <div class="logo-text">
         <h1>DustSweep</h1>
         <p id="tagline">BNB Chain</p>
       </div>
     </div>
-    
+
     <div class="chain-switcher">
       <div class="chain-slider" id="chain-slider"></div>
-      <div class="chain-tab active" data-chain="56" onclick="window.switchChain(56)">🟡 BNB Chain</div>
-      <div class="chain-tab" data-chain="8453" onclick="window.switchChain(8453)">🔵 Base</div>
+      <div class="chain-tab active" data-chain="56"   onclick="window.switchChain(56)"  >🟡 BNB</div>
+      <div class="chain-tab"        data-chain="8453" onclick="window.switchChain(8453)">🔵 Base</div>
     </div>
 
     <button id="btn-connect" onclick="window.connectWallet()">Connect Wallet</button>
   </header>
 
+  <!-- MAIN -->
   <main>
-    <!-- HERO SECTION -->
+
+    <!-- HERO -->
     <section class="hero">
       <h2 class="hero-heading">Sweep Your Dust</h2>
       <p class="hero-sub" id="hero-sub">Select dust tokens → One click → Get BNB</p>
-      
+
       <div class="stat-cards">
         <div class="stat-card">
           <div class="stat-label">Dust Found</div>
@@ -57,22 +78,22 @@
 
     <!-- TOKEN LIST -->
     <section class="token-panel">
-      <div class="panel-header" style="flex-wrap: wrap; gap: 10px;">
-        <div style="display: flex; align-items: center; gap: 16px;">
-          <h3 style="margin: 0;">Dust Tokens</h3>
-          <button id="btn-scan" onclick="window.scanTokens()" class="btn-gradient" style="padding: 6px 16px; font-size: 14px;">Scan Wallet</button>
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <h3>Dust Tokens</h3>
+          <button id="btn-scan" onclick="window.scanTokens()" class="btn-gradient">Scan Wallet</button>
         </div>
         <div class="panel-actions">
-          <button class="text-btn" onclick="window.selectAll(true)">Select All</button>
-          <button class="text-btn" onclick="window.selectAll(false)">Deselect All</button>
+          <button class="text-btn" onclick="window.selectAll(true)">All</button>
+          <button class="text-btn" onclick="window.selectAll(false)">None</button>
         </div>
       </div>
-      
+
       <div class="table-container">
         <table id="tokens-table">
           <thead>
             <tr>
-              <th style="width: 40px;"></th>
+              <th></th>
               <th>Token</th>
               <th class="hide-mobile">Balance</th>
               <th>Value</th>
@@ -82,8 +103,8 @@
             <tr>
               <td colspan="4">
                 <div class="empty-state">
-                  <div style="font-size: 40px; margin-bottom: 10px;">🧹</div>
-                  <p style="color: var(--text-dim); margin: 0;">No dust found yet. Scan your wallet!</p>
+                  <div style="font-size:44px;margin-bottom:12px">🧹</div>
+                  <p>No dust found yet.<br>Connect your wallet and scan!</p>
                 </div>
               </td>
             </tr>
@@ -91,6 +112,7 @@
         </table>
       </div>
     </section>
+
   </main>
 
   <!-- ACTION BAR -->
@@ -98,7 +120,7 @@
     <div class="action-content">
       <div class="action-stats">
         <div class="action-selected" id="action-selected">0 tokens selected</div>
-        <div class="action-est" id="action-est">Est. receive: 0.0000 BNB ≈ $0.00</div>
+        <div class="action-est mono" id="action-est">Est. receive: 0.0000 BNB ≈ $0.00</div>
         <div class="action-fee">Fee: 0.5%</div>
       </div>
       <button id="btn-sweep" class="btn-gradient" onclick="window.startSweepFlow()" disabled>🧹 Sweep Dust</button>
@@ -111,30 +133,34 @@
       <h3>Sweeping Your Dust 🧹</h3>
       <div class="modal-steps">
         <div class="modal-step" id="m-step1">
-          <div class="m-icon">✅</div> <div class="m-text">Step 1: Checking approvals</div>
+          <div class="m-icon">✅</div>
+          <div class="m-text">Step 1: Checking approvals</div>
         </div>
         <div class="modal-step" id="m-step2">
-          <div class="m-icon">⏳</div> <div class="m-text">Step 2: Batch approve TX</div>
+          <div class="m-icon">⏳</div>
+          <div class="m-text">Step 2: Approving tokens</div>
         </div>
         <div class="modal-step" id="m-step3">
-          <div class="m-icon">⏜</div> <div class="m-text">Step 3: Selling tokens</div>
+          <div class="m-icon">⏳</div>
+          <div class="m-text">Step 3: Selling tokens</div>
         </div>
         <div class="modal-step" id="m-step4">
-          <div class="m-icon">⏜</div> <div class="m-text" id="m-step4-text">Step 4: BNB sent to wallet</div>
+          <div class="m-icon">⏳</div>
+          <div class="m-text" id="m-step4-text">Step 4: ETH sent to wallet</div>
         </div>
       </div>
-      <button class="btn-cancel text-btn" id="btn-cancel-sweep" onclick="window.closeModal()" style="width: 100%; text-align: center; margin-top: 10px;">Cancel</button>
+      <button class="text-btn" style="width:100%;text-align:center;margin-top:4px" onclick="window.closeModal()">Cancel</button>
     </div>
   </div>
 
   <!-- SUCCESS SCREEN -->
   <div class="modal-overlay" id="success-modal">
     <div class="modal-content text-center">
-      <div class="success-icon">🎉</div>
-      <h3 id="success-title">X tokens swept!</h3>
-      <p id="success-received">You received X.XXX BNB</p>
-      <p id="success-usd" class="success-usd">≈ $XX.XX USD</p>
-      <button class="btn-gradient mt-4" style="width: 100%;" onclick="window.closeSuccessAndRescan()">Sweep More</button>
+      <span class="success-icon">🎉</span>
+      <h3 id="success-title">Tokens swept!</h3>
+      <p id="success-received" style="color:var(--text-dim);margin-top:6px"></p>
+      <p id="success-usd" class="success-usd"></p>
+      <button class="btn-gradient mt-4" style="width:100%" onclick="window.closeSuccessAndRescan()">Sweep More</button>
     </div>
   </div>
 

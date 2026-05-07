@@ -20,7 +20,7 @@ const CHAINS = {
     rpc: "https://mainnet.base.org",
     explorer: "https://basescan.org",
     alchemy: "https://base-mainnet.g.alchemy.com/v2/",
-    dust_sweeper: "0x10cc98615e32303666a6E163Aeb07ED8C37284C1",
+    dust_sweeper: "0xf74f78750bBc2Ee7761D14f3200a2b1213bc5eB7",
     router: "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24",
     weth: "0x4200000000000000000000000000000000000006",
     logo: "🔵",
@@ -32,17 +32,21 @@ const CHAINS = {
 const MULTICALL3 = "0xcA11bde05977b3631167028862bE2a173976CA11";
 
 // Base Builder Code — ERC-8021 attribution suffix (from base.dev > Settings > Builder Codes)
-// Appended to all Base-chain transactions so activity shows up in base.dev analytics & rewards.
-const BASE_BUILDER_CODE_SUFFIX = "0x07626173656170700080218021802180218021802180218021";
+// Per ERC-8021: suffix is appended AFTER the calldata so the EVM/contract ignores it.
+// Format: 0x + app-tag (7 bytes) + 0x0080218021802180218021802180218021 (repeating 8021 sentinel)
+const BASE_BUILDER_CODE_SUFFIX = "07626173656170700080218021802180218021802180218021";
 
 /**
- * Returns tx calldata with the ERC-8021 suffix appended when on Base chain.
- * No-op for any other chain — the bytes are simply ignored by the EVM.
+ * Returns tx data with the ERC-8021 Builder Code suffix appended for Base chain.
+ * The suffix is pure calldata padding — Solidity ABI decoder ignores trailing bytes,
+ * but Base nodes read it for attribution tracking on base.dev.
+ * Safe no-op on any other chain (suffix never added).
  */
 function withBuilderCode(encodedData, chainId) {
   if (chainId !== 8453) return encodedData;
-  // Strip leading 0x from suffix before concatenating
-  return encodedData + BASE_BUILDER_CODE_SUFFIX.slice(2);
+  // encodedData starts with 0x — strip it, append suffix, re-add 0x prefix
+  const base = encodedData.startsWith("0x") ? encodedData.slice(2) : encodedData;
+  return "0x" + base + BASE_BUILDER_CODE_SUFFIX;
 }
 
 let activeChain = 56;
@@ -492,7 +496,18 @@ window.startSweepFlow = async function() {
 
   } catch (err) {
     console.error(err);
-    showToast("Sweep failed: " + (err.reason || err.message), "error");
+    // Decode common revert reasons into user-friendly messages
+    let msg = err.reason || err.message || "Unknown error";
+    if (msg.includes("No ETH received") || msg.includes("No BNB received")) {
+      msg = "Sweep failed: Selected tokens have no liquidity on this chain's DEX. Try selecting different tokens.";
+    } else if (msg.includes("missing revert data") || msg.includes("CALL_EXCEPTION")) {
+      msg = "Contract call failed. The contract address may be wrong for this chain, or tokens lack DEX liquidity.";
+    } else if (msg.includes("Slippage")) {
+      msg = "Slippage too high — market moved. Try again.";
+    } else if (msg.includes("user rejected") || msg.includes("User denied")) {
+      msg = "Transaction rejected by user.";
+    }
+    showToast("❌ " + msg, "error");
     document.getElementById("sweep-modal").classList.remove("active");
   }
 };
