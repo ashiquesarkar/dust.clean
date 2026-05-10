@@ -278,7 +278,6 @@ window.scanTokens = async function() {
       const valueUsd = balNum * priceUsd;
       
       if (priceUsd > 0 && valueUsd < 1.0) {
-        totalFound++;
         dustTokens.push({
           address: addr, symbol, name, decimals, 
           balanceRaw: rawBigInt.toString(), balance: balNum, 
@@ -286,6 +285,38 @@ window.scanTokens = async function() {
         });
       }
     }
+
+    // NEW: Pre-filter tokens to guarantee V2 router liquidity
+    if (dustTokens.length > 0) {
+      const routerABI = ["function getAmountsOut(uint amountIn, address[] memory path) view returns (uint[] memory amounts)"];
+      const routerIface = new ethers.Interface(routerABI);
+      const mc = new ethers.Contract(MULTICALL3, MULTICALL_ABI, provider);
+      
+      const liqCalls = dustTokens.map(t => ({
+        target: chain.router,
+        allowFailure: true,
+        callData: routerIface.encodeFunctionData("getAmountsOut", [t.balanceRaw, [t.address, chain.weth]])
+      }));
+      
+      const liqResults = await mc.aggregate3(liqCalls);
+      const validDust = [];
+      for (let i = 0; i < dustTokens.length; i++) {
+        if (liqResults[i].success && liqResults[i].returnData !== "0x") {
+          try {
+            const decoded = routerIface.decodeFunctionResult("getAmountsOut", liqResults[i].returnData);
+            const amountsOut = decoded[0];
+            if (amountsOut[amountsOut.length - 1] > 0n) {
+              validDust.push(dustTokens[i]);
+            }
+          } catch (e) {
+            // decode failed
+          }
+        }
+      }
+      dustTokens = validDust;
+    }
+    
+    totalFound = dustTokens.length;
 
     document.getElementById("stat-found").innerText = totalFound;
     renderTokenList();
